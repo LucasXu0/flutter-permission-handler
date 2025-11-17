@@ -16,7 +16,6 @@
 #include <string>
 #include <variant>
 #include <winrt/Windows.Foundation.h>
-#include <winrt/Windows.Devices.Geolocation.h>
 #include <winrt/Windows.Devices.Bluetooth.h>
 #include <winrt/Windows.Devices.Radios.h>
 #include <winrt/Windows.Foundation.Collections.h>
@@ -27,7 +26,6 @@ namespace {
 
 using namespace flutter;
 using namespace winrt;
-using namespace winrt::Windows::Devices::Geolocation;
 using namespace winrt::Windows::Devices::Bluetooth;
 using namespace winrt::Windows::Devices::Radios;
 
@@ -61,10 +59,7 @@ class PermissionHandlerWindowsPlugin : public Plugin {
                         std::unique_ptr<MethodResult<>>);
 
  private:
-  void IsLocationServiceEnabled(std::unique_ptr<MethodResult<>> result);
   winrt::fire_and_forget IsBluetoothServiceEnabled(std::unique_ptr<MethodResult<>> result);
-
-  winrt::Windows::Devices::Geolocation::Geolocator geolocator;
 };
 
 // static
@@ -85,9 +80,7 @@ void PermissionHandlerWindowsPlugin::RegisterWithRegistrar(
   registrar->AddPlugin(std::move(plugin));
 }
 
-PermissionHandlerWindowsPlugin::PermissionHandlerWindowsPlugin(){
-  // This prevents Windows from showing continuous location access indicator
-}
+PermissionHandlerWindowsPlugin::PermissionHandlerWindowsPlugin() = default;
 
 PermissionHandlerWindowsPlugin::~PermissionHandlerWindowsPlugin() = default;
 
@@ -101,7 +94,7 @@ void PermissionHandlerWindowsPlugin::HandleMethodCall(
     if (permission == PermissionConstants::PermissionGroup::LOCATION ||
         permission == PermissionConstants::PermissionGroup::LOCATION_ALWAYS ||
         permission == PermissionConstants::PermissionGroup::LOCATION_WHEN_IN_USE) {
-        IsLocationServiceEnabled(std::move(result));
+        result->Success(EncodableValue((int)PermissionConstants::ServiceStatus::NOT_APPLICABLE));
         return;
     }
     if(permission == PermissionConstants::PermissionGroup::BLUETOOTH){
@@ -142,12 +135,6 @@ void PermissionHandlerWindowsPlugin::HandleMethodCall(
   } else {
     result->NotImplemented();
   }
-}
-
-void PermissionHandlerWindowsPlugin::IsLocationServiceEnabled(std::unique_ptr<MethodResult<>> result) {
-  result->Success(EncodableValue((int)(geolocator.LocationStatus() != PositionStatus::NotAvailable
-        ? PermissionConstants::ServiceStatus::ENABLED
-        : PermissionConstants::ServiceStatus::DISABLED)));
 }
 
 winrt::fire_and_forget PermissionHandlerWindowsPlugin::IsBluetoothServiceEnabled(std::unique_ptr<MethodResult<>> result) {
